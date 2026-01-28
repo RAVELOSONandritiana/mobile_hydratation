@@ -106,19 +106,19 @@ class _StartedScreenState extends State<StartedScreen> {
     final faker = Faker();
     final introductions = [
       _buildIntroduction(
-        const Icon(Icons.heart_broken, color: Colors.red, size: 128),
-        'Bien boire',
-        faker.lorem.sentences(3).join(" "),
+        const Icon(Icons.favorite, color: Colors.blue, size: 128),
+        'Drink Better',
+        'Fuel your body with the purest energy. Stay hydrated to feel your best every day.',
       ),
       _buildIntroduction(
-        const Icon(Icons.local_drink, color: Colors.white, size: 128),
-        'Rester Hydraté',
-        faker.lorem.sentences(3).join(" "),
+        const Icon(Icons.water_drop, color: Colors.white, size: 128),
+        'Stay Hydrated',
+        'Water improves focus, boosts skin health, and keeps your energy levels high.',
       ),
       _buildIntroduction(
-        const Icon(Icons.water, color: Colors.blue, size: 128),
-        'Objectifs quotidiens',
-        faker.lorem.sentences(3).join(" "),
+        const Icon(Icons.track_changes, color: Colors.blue, size: 128),
+        'Daily Goals',
+        'Track your progress and reach your hydration targets with our smart reminders.',
       ),
     ];
 

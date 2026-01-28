@@ -34,11 +34,28 @@ class _UpdateEmailState extends State<UpdateEmail> {
         data: {"id": prov.id, "name": newEmail},
       );
       prov.setEmail(newEmail);
+
+      if (!mounted) return;
+      await QuickAlert.show(
+        context: context,
+        type: QuickAlertType.success,
+        title: 'Succès',
+        text: 'Votre email a été mis à jour.',
+        onConfirmBtnTap: () {
+          Navigator.pop(context); // Close alert
+          Navigator.pop(context); // Go back to settings
+        },
+      );
     } catch (e) {
+      String errorMsg = "Une erreur est survenue";
+      if (e is DioException) {
+        errorMsg = e.response?.data['detail'] ?? e.message ?? "Erreur de connexion";
+      }
       QuickAlert.show(
         context: context,
         type: QuickAlertType.error,
         title: 'Erreur',
+        text: errorMsg,
         confirmBtnTextStyle: TextStyle(
           fontSize: 12,
           color: Colors.white,
@@ -62,68 +79,87 @@ class _UpdateEmailState extends State<UpdateEmail> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
         automaticallyImplyLeading: false,
         leading: IconButton(
           onPressed: () {
             Navigator.pop(context);
           },
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white, size: 14),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Text(
-              "Update your email",
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ),
-            SizedBox(height: 10),
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  _buildInput(
-                    "New Email",
-                    CustomInput(
-                      controller: _emailController,
-                      errorText: "new email required",
-                      placeholder: Text(
-                        "",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        update(_emailController.text);
-                        Navigator.pop(context);
-                      } else {
-                        if (kDebugMode) {
-                          print("_formKey invalid");
-                        }
-                      }
-                    },
-                    style: ButtonStyle(
-                      minimumSize: WidgetStatePropertyAll(
-                        Size(double.infinity, 50),
-                      ),
-                      backgroundColor: WidgetStatePropertyAll(Colors.blue),
-                    ),
-                    child: Text(
-                      "Confirm",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              const Text(
+                "Update Email",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                "Change the email address associated with your account.",
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      _buildInput(
+                        "New Email Address",
+                        CustomInput(
+                          controller: _emailController,
+                          errorText: "New email required",
+                          hintText: "Enter your new email",
+                          prefixIcon: const Icon(Icons.email_outlined, color: Colors.blue, size: 20),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    update(_emailController.text);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  "Confirm Change",
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );

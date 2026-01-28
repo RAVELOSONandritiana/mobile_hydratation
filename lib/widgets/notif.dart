@@ -4,9 +4,16 @@ import 'package:flutter/material.dart';
 class Notif extends StatefulWidget {
   final bool? showCloseButton;
   final bool success;
+  final String? message;
+  final String? date;
 
-  const Notif({Key? key, this.showCloseButton, required this.success})
-    : super(key: key);
+  const Notif({
+    Key? key,
+    this.showCloseButton,
+    required this.success,
+    this.message,
+    this.date,
+  }) : super(key: key);
 
   @override
   _NotifState createState() => _NotifState();
@@ -49,9 +56,9 @@ class _NotifState extends State<Notif> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.success
+                  widget.message ?? (widget.success
                       ? "Objective achieved"
-                      : "Objective not achieved",
+                      : "Objective not achieved"),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -59,12 +66,8 @@ class _NotifState extends State<Notif> {
                   ),
                 ),
                 const SizedBox(height: 5),
-                const Text(
-                  "300ml / 2500ml",
-                  style: TextStyle(color: Colors.white, fontSize: 10),
-                ),
                 Text(
-                  Faker().date.dateTime().toIso8601String(),
+                  widget.date ?? Faker().date.dateTime().toIso8601String(),
                   style: const TextStyle(color: Colors.grey, fontSize: 10),
                 ),
               ],

@@ -5,19 +5,23 @@ import 'package:flutter/services.dart';
 class CustomInput extends StatefulWidget {
   final TextEditingController controller;
   Widget? placeholder;
+  String? hintText;
   Icon? prefixIcon;
   Widget? suffix;
   bool? readOnly;
   List<TextInputFormatter>? inputFormatters;
+  TextInputType? keyboardType;
   String? errorText;
   CustomInput({
     super.key,
     required this.controller,
     this.placeholder,
+    this.hintText,
     this.prefixIcon,
     this.suffix,
     this.readOnly,
     this.inputFormatters,
+    this.keyboardType,
     this.errorText
   });
 
@@ -42,12 +46,15 @@ class _CustomInputState extends State<CustomInput> {
         }
       },
       cursorColor: Colors.white,
+      keyboardType: widget.keyboardType,
       inputFormatters: widget.inputFormatters,
       decoration: InputDecoration(
         prefixIcon: widget.prefixIcon,
         suffixIcon: widget.suffix,
         fillColor: Colors.white10,
         filled: true,
+        hintText: widget.hintText,
+        hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
         hint: widget.placeholder,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),

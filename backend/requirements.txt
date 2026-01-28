@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+tortoise-orm
+asyncmy
+aiomysql
+pydantic[email]
+passlib[bcrypt]
+bcrypt==4.0.1
+cryptography
+python-multipart

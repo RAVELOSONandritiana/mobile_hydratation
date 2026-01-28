@@ -23,31 +23,62 @@ class SettingsWidget extends StatefulWidget {
 class _SettingsWidgetState extends State<SettingsWidget> {
   @override
   Widget build(BuildContext context) {
-    return MaterialButton(
-      onPressed: widget.onPressed,
-      child: Container(
-        padding: EdgeInsets.all(5),
-        margin: EdgeInsets.symmetric(vertical: 10),
+    return InkWell(
+      onTap: widget.onPressed,
+      splashColor: Colors.blue.withOpacity(0.1),
+      highlightColor: Colors.blue.withOpacity(0.05),
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(width: 30, child: widget.icons ?? SizedBox.shrink()),
-            SizedBox(width: 10,),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.title,
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+            Container(
+              height: 44,
+              width: 44,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.blue.withOpacity(0.15),
+                    Colors.blue.withOpacity(0.05),
+                  ],
                 ),
-                Text(
-                  widget.subtitle,
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ],
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.blue.withOpacity(0.1)),
+              ),
+              child: Center(
+                child: widget.icons ?? const Icon(Icons.settings, color: Colors.blue, size: 22),
+              ),
             ),
-            Spacer(),
-            widget.trailing ?? SizedBox.shrink(),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (widget.subtitle.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        widget.subtitle,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.35),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            widget.trailing ?? Icon(Icons.chevron_right_rounded, color: Colors.white.withOpacity(0.2), size: 22),
           ],
         ),
       ),

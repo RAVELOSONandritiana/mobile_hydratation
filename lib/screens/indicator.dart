@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +27,12 @@ class _IndicatorScreenState extends State<IndicatorScreen>
   void initState() {
     super.initState();
     _quantityController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<NameProvider>();
+      if (user.id != 0) {
+        context.read<IndicatorProvider>().fetchData(user.id);
+      }
+    });
   }
 
   Widget _buildTopContainer() {
@@ -42,211 +49,308 @@ class _IndicatorScreenState extends State<IndicatorScreen>
     );
   }
 
+  Future<void> _quickLog(double amount) async {
+    final indicator = context.read<IndicatorProvider>();
+    final userId = context.read<NameProvider>().id;
+    try {
+      final response = await dio.post("${PathBackend().baseUrl}/compte/score", data: {
+        "score": amount,
+        "id_user": userId
+      });
+      
+      if (response.statusCode == 200) {
+        indicator.setCurrent((response.data['total_today'] as num).toDouble());
+        indicator.fetchData(userId);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Added ${amount.toInt()}ml 💧", style: const TextStyle(color: Colors.white)),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error quick logging: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
     return Scaffold(
-      floatingActionButton: IconButton(
-        padding: EdgeInsets.all(10),
-        style: const ButtonStyle(
-          backgroundColor: WidgetStatePropertyAll(Colors.blue),
-        ),
-        onPressed: () {
-          final indicator = context.read<IndicatorProvider>();
-          showModalBottomSheet(
-            context: context,
-            backgroundColor: Colors.black,
-            builder: (sheetContext) {
-              return Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.white10,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    spacing: 10,
-                    children: [
-                      _buildTopContainer(),
-                      const Text(
-                        "Enter Value",
-                        style: TextStyle(color: Colors.white, fontSize: 14),
-                      ),
-
-                      CustomInput(
-                        controller: _quantityController,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        prefixIcon: const Icon(Icons.water_drop_rounded, color: Colors.white),
-                      ),
-
-                      ElevatedButton(
-                        onPressed: () {
-                          double value =
-                              double.tryParse(_quantityController.text) ?? 0;
-                          indicator.setCurrent(indicator.current + value);
-                          dio.post("${PathBackend().baseUrl}/compte/score",data: {
-                            "score": value,
-                            "id_user":1
-                          });
-                          Navigator.pop(context);
-                        },
-                        style: const ButtonStyle(
-                          minimumSize: WidgetStatePropertyAll(
-                            Size(double.infinity, 50),
-                          ),
-                          backgroundColor: WidgetStatePropertyAll(Colors.blue),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.add, color: Colors.white),
-                            SizedBox(width: 10),
-                            Text("Add", style: TextStyle(color: Colors.white)),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-
-        icon: const Icon(Icons.add, color: Colors.white),
-      ),
-
+      backgroundColor: Colors.black,
       body: Consumer<IndicatorProvider>(
         builder: (context, indicator, _) {
           double percent = (indicator.current / indicator.max).clamp(0.0, 1.0);
+          final userProv = Provider.of<NameProvider>(context);
 
-          return SingleChildScrollView(
-            child: Center(
+          return RefreshIndicator(
+            onRefresh: () => indicator.fetchData(userProv.id),
+            backgroundColor: Colors.blue,
+            color: Colors.white,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: 20),
+                    const SizedBox(height: 10),
+                    // Glassmorphism Header
                     Container(
-                      padding: EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
                         color: Colors.white10,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.white.withOpacity(0.05)),
                       ),
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            height: 60,
-                            width: 60,
+                            height: 54,
+                            width: 54,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              image: DecorationImage(
-                                image: AssetImage('assets/images/avatar.jpg'),
-                                fit: BoxFit.cover,
-                              ),
+                              border: Border.all(color: Colors.blue.withOpacity(0.5), width: 2),
+                              image: userProv.profilePicture.isNotEmpty
+                                  ? DecorationImage(
+                                      image: MemoryImage(base64Decode(userProv.profilePicture)),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : const DecorationImage(
+                                      image: AssetImage('assets/images/avatar.jpg'),
+                                      fit: BoxFit.cover,
+                                    ),
                             ),
                           ),
-                          SizedBox(width: 20),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            spacing: 5,
-                            children: [
-                              Text(
-                                Provider.of<NameProvider>(context).name,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Hello, ${userProv.name}!",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                Provider.of<NameProvider>(context).email,
-                                style: TextStyle(
-                                  color: Colors.orange,
-                                  fontSize: 12,
+                                Text(
+                                  "Keep up the good work! 💧",
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.5),
+                                    fontSize: 12,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                Provider.of<NameProvider>(context).accountState,
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    CircularPercentIndicator(
-                      radius: 80.0,
-                      lineWidth: 13.0,
-                      animation: true,
-                      percent: percent,
-                      startAngle: 0,
-                      backgroundColor: Colors.white10,
-                      progressBorderColor: Colors.blueAccent,
-                      center: Text(
-                        "${(percent * 100).toStringAsFixed(2)}%",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20.0,
-                          color: Colors.white,
+                    const SizedBox(height: 40),
+
+                    // Main Progress Section
+                    Center(
+                      child: CircularPercentIndicator(
+                        radius: 100.0,
+                        lineWidth: 16.0,
+                        animation: true,
+                        percent: percent,
+                        startAngle: 0,
+                        backgroundColor: Colors.white10,
+                        progressBorderColor: Colors.blue.withOpacity(0.3),
+                        center: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "${(percent * 100).toInt()}%",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 32.0,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              "of daily goal",
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.5),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      footer: Text(
-                        "${indicator.current} / ${indicator.max} ml",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 17.0,
-                          color: Colors.white,
-                        ),
-                      ),
-                      circularStrokeCap: CircularStrokeCap.round,
-                      progressColor: Colors.blue,
-                    ),
-                    const SizedBox(height: 20),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      spacing: 10,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10),
+                        footer: Padding(
+                          padding: const EdgeInsets.only(top: 16.0),
                           child: Text(
-                            "Last Activity",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
+                            "${indicator.current.toInt()} / ${indicator.max.toInt()} ml",
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
+                              fontSize: 18.0,
+                              color: Colors.blue,
                             ),
                           ),
                         ),
+                        circularStrokeCap: CircularStrokeCap.round,
+                        progressColor: Colors.blue,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
 
-                        StatisticsChart()
+                    // Quick Actions
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildQuickAction(250, Icons.local_cafe_outlined),
+                        _buildQuickAction(500, Icons.local_drink_outlined),
+                        _buildCustomAction(),
                       ],
                     ),
+                    const SizedBox(height: 40),
 
-                    const SizedBox(height: 10),
+                    // Trends Section
+                    const Text(
+                      "Hydration Trends",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white10,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: const StatisticsChart(),
+                    ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildQuickAction(double amount, IconData icon) {
+    return InkWell(
+      onTap: () => _quickLog(amount),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: 80,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white10,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: Colors.blue, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              "${amount.toInt()}ml",
+              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomAction() {
+    return InkWell(
+      onTap: () {
+        final indicator = context.read<IndicatorProvider>();
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.black,
+          isScrollControlled: true,
+          builder: (sheetContext) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1E293B),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(child: _buildTopContainer()),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Custom Amount",
+                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 24),
+                    CustomInput(
+                      controller: _quantityController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      prefixIcon: const Icon(Icons.water_drop_rounded, color: Colors.blue),
+                      hintText: "Enter amount in ml",
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () async {
+                        double value = double.tryParse(_quantityController.text) ?? 0;
+                        if (value > 0) {
+                          await _quickLog(value);
+                          _quantityController.clear();
+                        }
+                        if (!mounted) return;
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        minimumSize: const Size(double.infinity, 54),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text("Add Intake", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: 80,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.blue.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: const [
+            Icon(Icons.add, color: Colors.blue, size: 28),
+            SizedBox(height: 8),
+            Text(
+              "Custom",
+              style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
     );
   }

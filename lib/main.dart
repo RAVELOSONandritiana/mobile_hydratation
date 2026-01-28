@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydratation/services/notification_service.dart';
 import 'package:hydratation/providers/compte_provider.dart';
 import 'package:hydratation/providers/indicator_provider.dart';
 import 'package:hydratation/providers/name_provider.dart';
@@ -10,7 +11,9 @@ import 'package:hydratation/screens/splash.dart';
 import 'package:hydratation/screens/started.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.init();
   Provider.debugCheckInvalidValueType = null;
   runApp(
     MultiProvider(

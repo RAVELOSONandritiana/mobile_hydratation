@@ -5,6 +5,7 @@ class NameProvider extends ChangeNotifier {
   String accountState = '';
   String email = '';
   int id = 0;
+  String profilePicture = '';
 
   setName(String name) {
     this.name = name;
@@ -23,6 +24,11 @@ class NameProvider extends ChangeNotifier {
 
   setId(int value) {
     id = value;
+    notifyListeners();
+  }
+
+  setProfilePicture(String value) {
+    profilePicture = value;
     notifyListeners();
   }
 }

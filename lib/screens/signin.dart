@@ -32,7 +32,7 @@ class _SigninState extends State<Signin> {
 
   Future<void> singIn(String email, String password) async {
     try {
-      Response result = await dio.get(
+      Response result = await dio.post(
         "${PathBackend().baseUrl}/users/signin",
         data: {"email": email, "password": password},
       );
@@ -43,14 +43,19 @@ class _SigninState extends State<Signin> {
       prov.setName(data['name']);
       prov.setAccountState(data['account_state']);
       prov.setId(data['id']);
+      prov.setProfilePicture(data['profile_picture'] ?? '');
       // ignore: use_build_context_synchronously
       context.go('/home');
     } catch (e) {
+      String errorMsg = "An error occurred";
+      if (e is DioException) {
+        errorMsg = e.response?.data['detail'] ?? e.message ?? "Connection error";
+      }
       QuickAlert.show(
         // ignore: use_build_context_synchronously
         context: context,
         type: QuickAlertType.info,
-        title: 'Account missing',
+        title: errorMsg,
         confirmBtnTextStyle: TextStyle(
           fontSize: 12,
           color: Colors.white,
@@ -74,137 +79,152 @@ class _SigninState extends State<Signin> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
         automaticallyImplyLeading: false,
         leading: IconButton(
           onPressed: () {
             context.go('/started');
           },
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white, size: 14),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Text(
-              "Sign in with your account",
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ),
-            SizedBox(height: 10),
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  _buildInput(
-                    "Email",
-                    CustomInput(
-                      controller: _emailController,
-                      errorText: 'Email is required',
-                      placeholder: Text(
-                        "email",
-                        style: TextStyle(color: Colors.grey),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              const Text(
+                "Welcome Back!",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Great to see you again. Please sign in to continue.",
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 48),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      _buildInput(
+                        "Email Address",
+                        CustomInput(
+                          controller: _emailController,
+                          errorText: 'Required',
+                          hintText: "Enter your email",
+                          prefixIcon: const Icon(Icons.email_outlined, color: Colors.blue, size: 20),
+                        ),
                       ),
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  _buildInput(
-                    "Password",
-                    InputPassword(
-                      controller: _passwordController,
-                      errorText: 'short password or is empty',
-                      placeholder: Text(
-                        "your password",
-                        style: TextStyle(color: Colors.grey),
+                      const SizedBox(height: 20),
+                      _buildInput(
+                        "Password",
+                        InputPassword(
+                          controller: _passwordController,
+                          errorText: 'Required',
+                          placeholder: Text(
+                            "Enter your password",
+                            style: TextStyle(color: Colors.white.withOpacity(0.2)),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: 5),
-                    child: Row(
-                      children: [
-                        Row(
-                          children: [
-                            Checkbox(
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: Checkbox(
                               value: isChecked,
                               activeColor: Colors.blue,
-                              shape: CircleBorder(),
+                              checkColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                              side: BorderSide(color: Colors.white.withOpacity(0.2)),
                               onChanged: (value) {
                                 setState(() {
                                   isChecked = value!;
                                 });
                               },
                             ),
-                            Text(
-                              "Remember me",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Spacer(),
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            "Forgot password",
-                            style: TextStyle(
-                              color: Colors.blueAccent,
-                              fontSize: 12,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            "Remember me",
+                            style: TextStyle(color: Colors.white70, fontSize: 13),
+                          ),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () {},
+                            child: const Text(
+                              "Forgot?",
+                              style: TextStyle(color: Colors.blue, fontSize: 13, fontWeight: FontWeight.bold),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        singIn(
-                          _emailController.text,
-                          _passwordController.text,
-                        );
-                      }
-                    },
-                    style: ButtonStyle(
-                      minimumSize: WidgetStatePropertyAll(
-                        Size(double.infinity, 50),
+                        ],
                       ),
-                      backgroundColor: WidgetStatePropertyAll(Colors.blue),
-                    ),
-                    child: Text(
-                      "Sign In",
-                      style: TextStyle(color: Colors.white),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    singIn(_emailController.text, _passwordController.text);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  "Sign In",
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "New here?",
+                    style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      context.go('/signup');
+                    },
+                    child: const Text(
+                      "Create Account",
+                      style: TextStyle(color: Colors.blue, fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
               ),
-            ),
-            Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Don't have a account?",
-                  style: TextStyle(color: Colors.white, fontSize: 12),
-                ),
-                TextButton(
-                  onPressed: () {
-                    context.go('/signup');
-                  },
-                  child: Text(
-                    "Sign up here",
-                    style: TextStyle(color: Colors.blueAccent, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 10),
-          ],
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
